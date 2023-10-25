@@ -5,4 +5,4 @@ metadata:
   name: ocm-kubevirt-samples
 spec:
   type: GitHub
-  pathname: https://github.com/aglitke/ocm-kubevirt-samples.git
+  pathname: https://github.com/nirs/ocm-kubevirt-samples.git
