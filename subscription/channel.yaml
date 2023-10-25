@@ -4,5 +4,5 @@ kind: Channel
 metadata:
   name: ocm-kubevirt-samples
 spec:
-  type: GitHub
-  pathname: https://github.com/aglitke/ocm-kubevirt-samples.git
+  type: Git
+  pathname: http://host.minikube.internal/ocm-kubevirt-samples.git
