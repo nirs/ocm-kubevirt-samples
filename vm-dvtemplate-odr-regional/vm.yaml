@@ -30,7 +30,7 @@ spec:
             disk: {}
           interfaces:
           - macAddress: 02:69:36:00:00:00
-            masquerade: {}
+            bridge: {}
             model: virtio
             name: default
           networkInterfaceMultiqueue: true
@@ -41,24 +41,28 @@ spec:
           type: pc-q35-rhel8.6.0
         resources:
           requests:
-            memory: 2Gi
+            memory: 256Mi
       evictionStrategy: LiveMigrate
       networks:
       - name: default
         pod: {}
       terminationGracePeriodSeconds: 180
+      accessCredentials:
+      - sshPublicKey:
+          source:
+            secret:
+              secretName: my-public-key
+          propagationMethod:
+            configDrive: {}
       volumes:
       - persistentVolumeClaim:
           claimName: sample-vm-pvc
         name: rootdisk
       - name: cloudinit
-        cloudInitNoCloud:
+        cloudInitConfigDrive:
           userData: |
-            #cloud-config
-            user: cirros
-            password: drftw!
-            chpasswd:
-              expire: false
+            #!/bin/sh
+            echo "Running user-data script"
   dataVolumeTemplates:
   - metadata:
       name: sample-vm-pvc
@@ -68,10 +72,10 @@ spec:
         appname: vm-dvtemplate-odr-regional
     spec:
       storage:
-        storageClassName: ocs-storagecluster-ceph-rbd
+        storageClassName: rook-ceph-block
         resources:
           requests:
-            storage: 2Gi
+            storage: 128Mi
       source:
         registry:
-          url: "docker://quay.io/alitke/cirros:latest"
+          url: "docker://quay.io/nirsof/cirros:0.6.2-1"
