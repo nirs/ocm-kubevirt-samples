@@ -6,10 +6,10 @@ metadata:
     appname: vm-standalone-dv-odr-regional
 spec:
   storage:
-    storageClassName: ocs-storagecluster-ceph-rbd
+    storageClassName: rook-ceph-block
     resources:
       requests:
-        storage: 2Gi
+        storage: 128Mi
   source:
     registry:
-      url: "docker://quay.io/alitke/cirros:latest"
+      url: "docker://quay.io/nirsof/cirros:0.6.2-1"

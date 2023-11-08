@@ -2,3 +2,11 @@
 resources:
 - vm.yaml
 - dv.yaml
+commonLabels:
+  appname: vm-standalone-dv-odr-regional
+secretGenerator:
+- name: my-public-key
+  files:
+  - test_rsa.pub
+generatorOptions:
+  disableNameSuffixHash: true
