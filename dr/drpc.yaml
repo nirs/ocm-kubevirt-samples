@@ -14,4 +14,4 @@ spec:
     name: kubevirt-placement
   pvcSelector:
     matchLabels:
-      appname: vm-standalone-dv-odr-regional
+      appname: kubevirt
