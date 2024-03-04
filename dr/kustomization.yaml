@@ -1,6 +1,0 @@
----
-resources:
-  - drpc.yaml
-namespace: kubevirt-sample
-commonLabels:
-  app: kubevirt-sample

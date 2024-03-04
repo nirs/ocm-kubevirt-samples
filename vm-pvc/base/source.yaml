@@ -7,5 +7,4 @@ spec:
   source:
     registry:
       # Image customized for ramen testing.
-      # TODO: Consume from ramendr repo when available.
       url: "docker://quay.io/nirsof/cirros:0.6.2-1"

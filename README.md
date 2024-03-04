@@ -14,7 +14,7 @@ VM.
 1. Create new application using:
    - repo: this repo URL
    - branch: main
-   - path: one of the `vm-*-odr-*` directories
+   - path: one of the `vm-*/odr-*` directories
 
 1. To enable DR assign DR Policy
 
@@ -52,59 +52,59 @@ If you want to inject your SSH key into the VM, you need to replace
 the included SSH public key with your own public key.
 
 1. Fork this repo in github
-1. Replace the contents of the `vm-standalone-pvc-k8s/test_rsa.pub` with
-   *your* public key (e.g. `~/.ssh/id_rsa.pub`)
+1. Replace the content of the `vm-*/base/test_rsa.pub` with the
+   content of *your* public key (e.g. `~/.ssh/id_rsa.pub`)
 1. Update `channel/channel.yaml` to point to *your* repository
    (e.g. https://github.com/my-github-user/ocm-kubevirt-samples.git)
 1. If you are not using the `main` branch update
-   `subscription/subscription.yaml` to point to the right branch.
+   `subscription/vm-*/subscription.yaml` to point to the right branch.
 
 ### Deploying the VM subscription
 
-To start the VM deploy the subscription:
+To start the PVC based VM `vm-pvc` use the
+`subscription/vm-pvc-k8s-regional` overlay:
 
 ```sh
-kubectl apply -k subscription --context hub
+kubectl apply -k subscription/vm-pvc-k8s-regional --context hub
 ```
 
-The subscription starts the VM `vm-standalone-pvc-k8s` on one of the
-clusters in the default clusterset.
+This subscription starts the VM `vm-pvc` in the namespace `vm-pvc` on
+one of the clusters in the default clusterset.
 
-The subscription is optimized for *Ramen* minikube based test
-environment. To use in another setup you may need to modify the
-resources.
+This overlay is customized for *Ramen* minikube based test environment.
+To use in another setup you may want to create a new overlay.
 
 ### Inspecting the VM status
 
 To find where the VM was placed look at the PlacementDecisions status:
 
 ```sh
-kubectl get placementdecisions -n kubevirt-sample --context hub \
+kubectl get placementdecisions -n vm-pvc --context hub \
     -o jsonpath='{.items[0].status.decisions[0].clusterName}{"\n"}'
 ```
 
 To inspect the VM and DR resources use:
 
 ```sh
-watch -n 5 kubectl get vm,vmi,pod,pvc,vrg,vr -n kubevirt-sample --context dr1
+watch -n 5 kubectl get vm,vmi,pod,pvc,vrg,vr -n vm-pvc --context dr1
 ```
 
 Example output:
 
 ```console
-Every 5.0s: kubectl get vm,vmi,pod,pvc,vrg,vr -n kubevirt-sample --context dr1
+Every 5.0s: kubectl get vm,vmi,pod,pvc,vrg,vr -n vm-pvc --context dr1
 
 NAME                                   AGE     STATUS    READY
-virtualmachine.kubevirt.io/sample-vm   5m51s   Running   True
+virtualmachine.kubevirt.io/vm   5m51s   Running   True
 
 NAME                                           AGE     PHASE     IP            NODENAME   READY
-virtualmachineinstance.kubevirt.io/sample-vm   5m51s   Running   10.244.0.61   dr1        True
+virtualmachineinstance.kubevirt.io/vm   5m51s   Running   10.244.0.61   dr1        True
 
 NAME                                READY   STATUS    RESTARTS   AGE
-pod/virt-launcher-sample-vm-chsrh   1/1     Running   0          5m51s
+pod/virt-launcher-vm-chsrh   1/1     Running   0          5m51s
 
 NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS      AGE
-persistentvolumeclaim/sample-vm-pvc   Bound    pvc-149bd414-c1b8-443c-90f7-7e30fc519eb4   128Mi      RWX            rook-ceph-block   5m51s
+persistentvolumeclaim/vm-pvc   Bound    pvc-149bd414-c1b8-443c-90f7-7e30fc519eb4   128Mi      RWX            rook-ceph-block   5m51s
 ```
 
 At this point there there are no `vrg` and `vr` resources, since we did
@@ -130,16 +130,16 @@ To allow *Ramen* to protect the VM, you need to disable *OCM*
 scheduling by adding an annotation to the VM placement:
 
 ```sh
-kubectl annotate placement kubevirt-placement \
+kubectl annotate placement placement \
     cluster.open-cluster-management.io/experimental-scheduling-disable=true \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --context hub
 ```
 
 Deploy the DR resources to enable DR:
 
 ```sh
-kubectl apply -k dr --context hub
+kubectl apply -k dr/vm-pvc-k8s-regional --context hub
 ```
 
 At this point *Ramen* controls the VM placement and protects the VM data
@@ -149,9 +149,9 @@ To wait until the VM data is replicating to the secondary cluster, wait
 for the `PeerReady` condition:
 
 ```sh
-kubectl wait drpc kubevirt-drpc \
+kubectl wait drpc drpc \
     --for condition=PeerReady \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --timeout 5m \
     --context hub
 ```
@@ -162,54 +162,54 @@ We can inspect the VM DR status using the `DRPlacementControl` resource
 on the hub cluster:
 
 ```sh
-watch -n 5 kubectl get drpc -n kubevirt-sample --context hub -o wide
+watch -n 5 kubectl get drpc -n vm-pvc --context hub -o wide
 ```
 
 Example output:
 
 ```console
-Every 5.0s: kubectl get drpc -n kubevirt-sample --context hub -o wide
+Every 5.0s: kubectl get drpc -n vm-pvc --context hub -o wide
 
 NAME            AGE   PREFERREDCLUSTER   FAILOVERCLUSTER   DESIREDSTATE   CURRENTSTATE   PROGRESSION   START TIME             DURATION       PEER READY
-kubevirt-drpc   51s   dr1                                                 Deployed	 Completed     2023-11-19T20:26:53Z   5.035609263s   True
+drpc   51s   dr1                                                 Deployed	 Completed     2023-11-19T20:26:53Z   5.035609263s   True
 ```
 
 To get more details we can watch the VM and DR reosurces on the managed
 cluster:
 
 ```sh
-watch -n 5 kubectl get vm,vmi,pod,pvc,vrg,vr -n kubevirt-sample --context dr1
+watch -n 5 kubectl get vm,vmi,pod,pvc,vrg,vr -n vm-pvc --context dr1
 ```
 
 Example output:
 
 ```console
-Every 5.0s: kubectl get vm,vmi,pod,pvc,vrg,vr -n kubevirt-sample --context dr1
+Every 5.0s: kubectl get vm,vmi,pod,pvc,vrg,vr -n vm-pvc --context dr1
 
 NAME                                   AGE   STATUS    READY
-virtualmachine.kubevirt.io/sample-vm   16m   Running   True
+virtualmachine.kubevirt.io/vm   16m   Running   True
 
 NAME                                           AGE   PHASE     IP            NODENAME   READY
-virtualmachineinstance.kubevirt.io/sample-vm   16m   Running   10.244.0.61   dr1        True
+virtualmachineinstance.kubevirt.io/vm   16m   Running   10.244.0.61   dr1        True
 
 NAME                                READY   STATUS    RESTARTS   AGE
-pod/virt-launcher-sample-vm-chsrh   1/1     Running   0          16m
+pod/virt-launcher-vm-chsrh   1/1     Running   0          16m
 
 NAME                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS      AGE
-persistentvolumeclaim/sample-vm-pvc   Bound    pvc-149bd414-c1b8-443c-90f7-7e30fc519eb4   128Mi      RWX            rook-ceph-block   16m
+persistentvolumeclaim/vm-pvc   Bound    pvc-149bd414-c1b8-443c-90f7-7e30fc519eb4   128Mi      RWX            rook-ceph-block   16m
 
 NAME                                                        DESIREDSTATE   CURRENTSTATE
-volumereplicationgroup.ramendr.openshift.io/kubevirt-drpc   primary        Primary
+volumereplicationgroup.ramendr.openshift.io/drpc   primary        Primary
 
 NAME                                                               AGE     VOLUMEREPLICATIONCLASS   PVCNAME         DESIREDSTATE   CURRENTSTATE
-volumereplication.replication.storage.openshift.io/sample-vm-pvc   2m46s   vrc-sample               sample-vm-pvc   primary        Primary
+volumereplication.replication.storage.openshift.io/vm-pvc   2m46s   vrc-sample               vm-pvc   primary        Primary
 ```
 
 The cirros VM used by this example includes a logger service logging a
 message every 10 seconds:
 
 ```sh
-virtctl ssh cirros@sample-vm -n kubevirt-sample --known-hosts= --context dr1 -c 'head /var/log/ramen.log'
+virtctl ssh cirros@vm -n vm-pvc --known-hosts= --context dr1 -c 'head /var/log/ramen.log'
 ```
 
 Example output:
@@ -261,10 +261,10 @@ To start `Failover` action, patch the VM `DRPlacementControl` resource
 to set `action` and `failoverCluster`:
 
 ```sh
-kubectl patch drpc kubevirt-drpc \
+kubectl patch drpc drpc \
     --patch '{"spec": {"action": "Failover", "failoverCluster": "dr2"}}' \
     --type merge \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --context hub
 ```
 
@@ -275,7 +275,7 @@ Inspecting the `/var/log/ramen.log` via SSH show how much data was lost
 during the failover:
 
 ```sh
-virtctl ssh cirros@sample-vm -n kubevirt-sample --known-hosts= --context dr2 -c 'tail -f /var/log/ramen.log'
+virtctl ssh cirros@vm -n vm-pvc --known-hosts= --context dr2 -c 'tail -f /var/log/ramen.log'
 ```
 
 Example output:
@@ -309,9 +309,9 @@ cluster ("dr1").
 To wait until the VM data is replicated again to the other cluster:
 
 ```sh
-kubectl wait drpc kubevirt-drpc \
+kubectl wait drpc drpc \
     --for condition=PeerReady \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --timeout 5m \
     --context hub
 ```
@@ -330,10 +330,10 @@ Patch the VM `DRPlacementControl` resource to set `action` and
 if needed, `preferredCluster`.
 
 ```sh
-kubectl patch drpc kubevirt-drpc \
+kubectl patch drpc drpc \
     --patch '{"spec": {"action": "Relocate", "preferredCluster": "dr1"}}' \
     --type merge \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --context hub
 ```
 
@@ -344,9 +344,9 @@ To wait until the VM is relocated to the primary cluster, wait until the
 drpc phase is `Relocated`:
 
 ```sh
-kubectl wait drpc kubevirt-drpc \
+kubectl wait drpc drpc \
     --for jsonpath='{.status.phase}=Relocated' \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --timeout 5m \
     --context hub
 ```
@@ -356,7 +356,7 @@ on the secondary cluster ("dr2") and started on the primary cluster
 ("dr1"). No data was lost!
 
 ```sh
-virtctl ssh cirros@sample-vm -n kubevirt-sample --known-hosts= --context dr1 -c 'tail -f /var/log/ramen.log'
+virtctl ssh cirros@vm -n vm-pvc --known-hosts= --context dr1 -c 'tail -f /var/log/ramen.log'
 ```
 
 Example output:
@@ -379,9 +379,9 @@ To wait until the VM is replicating data again to the secondary cluster,
 wait for the `PeerReady` condition:
 
 ```sh
-kubectl wait drpc kubevirt-drpc \
+kubectl wait drpc drpc \
     --for condition=PeerReady \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --timeout 5m \
     --context hub
 ```
@@ -391,16 +391,16 @@ kubectl wait drpc kubevirt-drpc \
 Delete the `dr` resources to disable DR:
 
 ```sh
-kubectl delete -k dr --context hub
+kubectl delete -k dr/vm-pvc-k8s-regional --context hub
 ```
 
 Enable *OCM* scheduling again by deleting the placement annotation we
 added before:
 
 ```sh
-kubectl annotate placement kubevirt-placement \
+kubectl annotate placement placement \
     cluster.open-cluster-management.io/experimental-scheduling-disable- \
-    --namespace kubevirt-sample \
+    --namespace vm-pvc \
     --context hub
 ```
 
@@ -412,5 +412,5 @@ the VM data on the DR clusters will be reclaimed.
 Delete the subscription to stop and delete the VM:
 
 ```sh
-kubectl delete -k subscription --context hub
+kubectl delete -k subscription/vm-pvc-k8s-regional --context hub
 ```

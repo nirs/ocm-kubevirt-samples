@@ -1,0 +1,12 @@
+---
+resources:
+  - source.yaml
+  - pvc.yaml
+  - vm.yaml
+namespace: vm-pvc
+secretGenerator:
+  - name: my-public-key
+    files:
+      - test_rsa.pub
+generatorOptions:
+  disableNameSuffixHash: true
