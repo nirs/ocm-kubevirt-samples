@@ -1,10 +1,10 @@
 ---
 resources:
-- namespace.yaml
-- channel.yaml
-- binding.yaml
-- placement.yaml
-- subscription.yaml
+  - namespace.yaml
+  - channel.yaml
+  - binding.yaml
+  - placement.yaml
+  - subscription.yaml
 namespace: kubevirt-sample
 commonLabels:
   app: kubevirt-sample
