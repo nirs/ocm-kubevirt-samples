@@ -12,6 +12,3 @@ patches:
       - op: replace
         path: /metadata/annotations/apps.open-cluster-management.io~1github-path
         value: vm-pvc/k8s-regional
-      - op: replace
-        path: /spec/channel
-        value: vm-pvc/ocm-kubevirt-samples

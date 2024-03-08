@@ -2,7 +2,7 @@
 apiVersion: apps.open-cluster-management.io/v1
 kind: Channel
 metadata:
-  name: ocm-kubevirt-samples
+  name: kubevirt-gitops
 spec:
   type: GitHub
   pathname: https://github.com/aglitke/ocm-kubevirt-samples.git
